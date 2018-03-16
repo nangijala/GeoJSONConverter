@@ -13,3 +13,6 @@ Filter entries from Cuba, output as kml:
 
 `node main.js --lon "-90...-60" -e kml`
 
+export as kmz:
+
+`node main.js --lon "-90...-60" -e kmz`

@@ -1,4 +1,6 @@
 const fs = require('fs');
+const JSZip = require('jszip')
+
 
 
 /**
@@ -41,7 +43,7 @@ places.features.forEach((p)=>{
     if(  lon >= args.lon[0] && lon <= args.lon[1] && lat >= args.lat[0] && lat <= args.lat[1]  ){
         if( args.exportFormat === 'poi'){
             exportData.push( `${lon},${lat},"${name}"` )
-        }else if( args.exportFormat === 'kml'){
+        }else if( args.exportFormat === 'kml' || args.exportFormat === 'kmz'){
             var pm =`<Placemark>
 <name>${name}</name>
 <Point><coordinates>${lon},${lat}</coordinates></Point>
@@ -52,16 +54,28 @@ places.features.forEach((p)=>{
     }
 });
 
+function exportKml( entries, args ){
+    var ret=`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://earth.google.com/kml/2.2">\n<Document>
+<name>${args.placesName}</name>\n<visibility>1</visibility>`
+    ret += exportData.join('\n')
+    ret +=`</Document>\n</kml>\n`
+    return ret
+}
 
 if( exportData.length > 0){
     if( args.exportFormat === 'kml'){
-        console.log( `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://earth.google.com/kml/2.2">\n<Document>`)
-        console.log( `<name>${args.placesName}</name>\n<visibility>1</visibility>`)
-    }
-     console.log( exportData.join('\n'))
-
-    if( args.exportFormat === 'kml'){
-        console.log( `</Document>\n</kml>\n`)
+        console.log( exportKml(exportData, args) )
+    }else if( args.exportFormat === 'kmz'){
+        var zip = new JSZip();        
+        zip
+        .file(args.placesName + '.kml', exportKml(exportData, args) )
+        .generateNodeStream({type:'nodebuffer',compression: 'DEFLATE', streamFiles:true})
+        .pipe(fs.createWriteStream(args.placesName + '.kmz'))
+        .on('finish', function () {
+            console.log(args.placesName +  ".kmz written.");
+        });  
+    }else{
+        console.log( exportData.join('\n'))
     }
     
 }
